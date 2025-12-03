@@ -1,83 +1,60 @@
-"use client";
+// nextjs-app/src/app/page.tsx
+"use client"; // Necessário pois usa hooks (useState)
 
-import { useState } from "react";
+import { useState } from 'react';
+import SearchForm from './components/SearchForm';
+import ResultsTable from './components/ResultsTable'; // Vamos criar/editar este a seguir
+import { SystemResult } from './lib/api';
 
 export default function Home() {
-    const [query, setQuery] = useState("");
-    const [result, setResult] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
-
-    async function handleSearch() {
-    if (!query.trim()) return;
-
-    setLoading(true);
-    setResult(null);
-
-    try {
-        const res = await fetch(`http://localhost:8000/search?query=${query}`);
-
-        if (!res.ok) {
-        throw new Error("Erro ao consultar API");
-        }
-
-        const data = await res.json();
-        setResult(data);
-    } catch (err) {
-        console.error(err);
-        setResult({ error: "Erro ao buscar dados" });
-    } finally {
-        setLoading(false);
-    }
-    }
+    const [results, setResults] = useState<SystemResult[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     return (
-        <main style={{ padding: 40 }}>
-        <h1>Scraper Frontend</h1>
-
-        <div style={{ marginTop: 20 }}>
-        <input
-            type="text"
-            placeholder="Buscar..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{
-            padding: 10,
-            width: 300,
-            marginRight: 10,
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            }}
+        <div className="min-h-screen bg-gray-50 p-8">
+            <header className="mb-8">
+                <h1 className="text-3xl font-extrabold text-gray-900">
+                    Scraper Search & Matriz de Aderência
+                </h1>
+                <p className="text-gray-600">Encontre e classifique softwares com base nos seus critérios.</p>
+            </header>
+    
+      {/* Formulário de Busca */}
+            <SearchForm 
+                onResults={setResults} 
+                onLoading={setIsLoading} 
+                onError={setError}
         />
 
-        <button
-            onClick={handleSearch}
-            disabled={loading}
-            style={{
-            padding: "10px 20px",
-            borderRadius: 6,
-            border: "none",
-            background: "#0070f3",
-            color: "white",
-            cursor: "pointer",
-            }}
-        >
-            {loading ? "Buscando..." : "Buscar"}
-        </button>
+      {/* Área de Status/Erro */}
+        {error && (
+            <div className="mt-6 p-4 text-sm text-red-800 rounded-lg bg-red-100" role="alert">
+            {error}
         </div>
+        )}
+    
+      {/* Área de Resultados */}
+            <main className="mt-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    {isLoading ? "Processando Resultados..." : "Resultados da Análise"}
+                </h2>
+        
+        {isLoading && (
+            <div className="flex items-center space-x-2 text-blue-600">
+                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">...</svg>
+                <span>Carregando e fazendo scraping...</span>
+            </div>
+        )}
 
-        <div style={{ marginTop: 30 }}>
-        <h2>Resultado:</h2>
-        <pre
-            style={{
-            background: "#f5f5f5",
-            padding: 20,
-            borderRadius: 8,
-            maxWidth: 600,
-            }}
-        >
-            {result ? JSON.stringify(result, null, 2) : "Nenhum resultado"}
-        </pre>
-        </div>
+        {!isLoading && results.length > 0 && (
+            <ResultsTable results={results} />
+        )}
+
+        {!isLoading && results.length === 0 && !error && (
+            <p className="text-gray-500">Nenhum resultado para exibir. Por favor, inicie uma busca.</p>
+        )}
     </main>
+    </div>
 );
 }
